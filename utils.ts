@@ -45,6 +45,12 @@ export async function reduceObohat(user, amount) {
   await storedUser!.updateOne({ obohat: currentObohat - amount });
 }
 
+export async function increaseObohat(user, amount) {
+  const storedUser = await userModel.findOne({ username: user.username });
+  const currentObohat = storedUser!.obohat;
+  await storedUser!.updateOne({ obohat: currentObohat + amount });
+}
+
 export async function getListofObohat() {
   const storedUsers = await userModel.find({});
   return storedUsers.map(user => `@${user.username} : ${user.obohat}`).join("\n");
