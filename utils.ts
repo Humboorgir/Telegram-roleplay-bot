@@ -15,11 +15,12 @@ export const chooseRandom = (arr: any[]) => {
 
 
 // chat related utils 
-export const literalReply = ((ctx, message: string) => {
-   ctx.reply(message, {reply_parameters: { message_id: ctx.message.message_id }});
+export const literalReply = ((ctx, message: string, isMarkdown = false) => {
+   ctx.reply(message, { parse_mode: isMarkdown ? "MarkdownV2" : "" ,reply_parameters: { message_id: ctx.message.message_id }});
 })
 
 export const replyAfterReducedObohat = (ctx) => {
+  console.log("replying after reduced violation")
    ctx.reply(chooseRandom(replyToSomeoneLosingTheirObohat), {reply_parameters: { message_id: ctx.message.message_id }});
 }
 
@@ -29,31 +30,69 @@ export const replyAfterRepeatedViolation = (ctx) => {
 
 // obohat related stuff 
 export async function addUserToObohatMetric(user) {
-  const storedUser = await userModel.findOne({ username: user.username });
+  const storedUser = await userModel.findOne({ id: user.id });
   // already stored, no need to do anything
   if(storedUser) return;
   const data = new userModel({
-    username: user.username,
+    id: user.id,
     obohat: 100
   })
   await data.save();
 }
 
 export async function reduceObohat(user, amount) {
-  const storedUser = await userModel.findOne({ username: user.username });
+  const storedUser = await userModel.findOne({ id: user.id });
   const currentObohat = storedUser!.obohat;
   await storedUser!.updateOne({ obohat: currentObohat - amount });
 }
 
 export async function increaseObohat(user, amount) {
-  const storedUser = await userModel.findOne({ username: user.username });
+  const storedUser = await userModel.findOne({ id: user.id });
   const currentObohat = storedUser!.obohat;
   await storedUser!.updateOne({ obohat: currentObohat + amount });
 }
 
-export async function getListofObohat() {
+export async function getUserObohat(user) {
+  const storedUser = await userModel.findOne({ id: user.id });
+  if(!storedUser) {
+    let data = new userModel({
+      id: user.id,
+      obohat: 100
+    })
+
+    return await data.save();
+  }
+  const currentObohat = storedUser.obohat;
+  return currentObohat;
+}
+
+export async function getListofObohat(ctx) {
   const storedUsers = await userModel.find({});
-  return storedUsers.map(user => `@${user.username} : ${user.obohat}`).join("\n");
+  const list = await Promise.all(storedUsers.map(async (user) => {
+    const member = await ctx.getChatMember(user.id);
+    if(!member) console.log(`ERROR! Member with the id ${user.id} cannot be found`)
+    const firstName = member.user.first_name;
+    return `[${firstName.replace(/\_/g, '\\_')
+             .replace(/\*/g, '\\*')
+             .replace(/\[/g, '\\[')
+             .replace(/\]/g, '\\]')
+             .replace(/\(/g, '\\(')
+             .replace(/\)/g, '\\)')
+             .replace(/\~/g, '\\~')
+             .replace(/\`/g, '\\`')
+             .replace(/\>/g, '\\>')
+             .replace(/\#/g, '\\#')
+             .replace(/\+/g, '\\+')
+             .replace(/\-/g, '\\-')
+             .replace(/\=/g, '\\=')
+             .replace(/\|/g, '\\|')
+             .replace(/\{/g, '\\{')
+             .replace(/\}/g, '\\}')
+             .replace(/\./g, '\\.')
+             .replace(/\!/g, '\\!')}](tg://user?id=${user.id}) : ${user.obohat}`
+  }));
+
+  return (list.join("\n"))
 }
 // mongodb related stuff
 export function mongoConnect(): void {

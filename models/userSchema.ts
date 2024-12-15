@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const reqString = {
-  type: String, required: true
+  type: String, required: true,
 }
 
 const reqNumber = {
@@ -10,7 +10,7 @@ const reqNumber = {
 }
 
 const userSchema = new Schema({
-  username: reqString,
+  id: reqString,
   obohat: reqNumber
 });
 

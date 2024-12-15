@@ -6,7 +6,7 @@ import {
 } from "../utils";
 import { blacklistedWords } from "../dataset.json";
 
-export default function messageHandler(
+export default async function messageHandler(
   ctx,
   recentlyLostObohat,
 ) {
@@ -14,10 +14,11 @@ export default function messageHandler(
   const message = ctx.message.text;
   let messageContainsBlacklistedWords = false;
 
-  addUserToObohatMetric(author);
+  await addUserToObohatMetric(author);
 
-  message.split(" ").forEach((word) => {
+   message.split(" ").forEach(async (word) => {
     if (!blacklistedWords.includes(word)) return;
+     
     reduceObohat(author, 5);
     messageContainsBlacklistedWords = true;
   });
@@ -26,6 +27,7 @@ export default function messageHandler(
     if (recentlyLostObohat.has(author.username)) {
       return replyAfterRepeatedViolation(ctx);
     }
+    
     recentlyLostObohat.add(author.username);
     setTimeout(function () {
       recentlyLostObohat.delete(author.username);
