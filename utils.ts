@@ -4,6 +4,7 @@ import {
 } from "./dataset.json";
 import userModel from "./models/userSchema";
 import mongoose from 'mongoose';
+import express from 'express';
 
 export const chooseRandom = (arr: any[]) => {
     if (arr.length === 0) {
@@ -15,17 +16,19 @@ export const chooseRandom = (arr: any[]) => {
 
 
 // chat related utils 
-export const literalReply = ((ctx, message: string, isMarkdown = false) => {
-   ctx.reply(message, { parse_mode: isMarkdown ? "MarkdownV2" : "" ,reply_parameters: { message_id: ctx.message.message_id }});
+export const literalReply = (async (ctx, message: string, isMarkdown = false) => {
+  console.log("doing a literal reply")
+  try {
+   await ctx.reply(message, { parse_mode: isMarkdown ? "MarkdownV2" : "" ,reply_parameters: { message_id: ctx.message.message_id }});
+  } catch (e) { console.log(`Caught an error:\n`+ JSON.stringify(e))}
 })
 
-export const replyAfterReducedObohat = (ctx) => {
-  console.log("replying after reduced violation")
-   ctx.reply(chooseRandom(replyToSomeoneLosingTheirObohat), {reply_parameters: { message_id: ctx.message.message_id }});
+export const replyAfterReducedObohat = async (ctx) => {
+  literalReply(ctx, chooseRandom(replyToSomeoneLosingTheirObohat));
 }
 
-export const replyAfterRepeatedViolation = (ctx) => {
-  ctx.reply(chooseRandom(replyToSomeoneRepeating), {reply_parameters: {message_id: ctx.message.message_id}});
+export const replyAfterRepeatedViolation = async (ctx) => {
+  literalReply(ctx, chooseRandom(replyToSomeoneRepeating))
 }
 
 // obohat related stuff 
@@ -33,6 +36,8 @@ export async function addUserToObohatMetric(user) {
   const storedUser = await userModel.findOne({ id: user.id });
   // already stored, no need to do anything
   if(storedUser) return;
+
+  console.log(`adding ${user.username} to users`)
   const data = new userModel({
     id: user.id,
     obohat: 100
@@ -53,17 +58,10 @@ export async function increaseObohat(user, amount) {
 }
 
 export async function getUserObohat(user) {
+  await addUserToObohatMetric(user);
   const storedUser = await userModel.findOne({ id: user.id });
-  if(!storedUser) {
-    let data = new userModel({
-      id: user.id,
-      obohat: 100
-    })
-
-    return await data.save();
-  }
-  const currentObohat = storedUser.obohat;
-  return currentObohat;
+  if(!storedUser) return 'فضلی ریدی ربات ارور داد پرامس رو اشتباه نوشتی'
+  return storedUser!.obohat;
 }
 
 export async function getListofObohat(ctx) {
@@ -98,4 +96,18 @@ export async function getListofObohat(ctx) {
 export function mongoConnect(): void {
     if (!process.env.MONGODB_URI) throw Error("[mongoConnect] Couldn't find process.env.MONGODB_URI");
     mongoose.connect(process.env.MONGODB_URI).then(() => console.log('[mongoConnect] Successfull connected to mongodb'));
+}
+
+// express 
+export function keepAlive() {
+  const app = express()
+  const port = 3000
+
+  app.all('/', (req, res) => {
+    res.send('Hello!')
+  })
+
+  app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`)
+  })
 }
