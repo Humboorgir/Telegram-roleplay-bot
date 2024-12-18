@@ -1,4 +1,4 @@
-import { getUserObohat, literalReply } from '../utils';
+import { getUserObohat, reduceObohat, literalReply } from '../utils';
 
 export default async function handleSokoot(ctx) {
   // basic checks 
@@ -10,7 +10,8 @@ export default async function handleSokoot(ctx) {
 
   // actual code 
   const obohat = await getUserObohat(author);
-  const requiredObohat = 200;
+  if(typeof obohat !== "number") return literalReply(ctx, 'فضلی اشتب زدی ربات ارور داد')
+  const requiredObohat = 400;
 
   if(obohat < requiredObohat) return literalReply(ctx, `شما ابهت کاری برای انجام این کار را ندارید! ${requiredObohat - obohat} تا دیگه نیاز دارید.`)
 
@@ -38,7 +39,7 @@ export default async function handleSokoot(ctx) {
     });
   }, 1000 * 60 * 30)
 
-  reduceObohat(author, 50);
+  reduceObohat(author, 300);
   literalReply(ctx, `به @${userBeingSokooted.username} نیم ساعت سکوت دادم!!
   اما شما به دلیل سوء استفاده از قدرتتان مقدار زیادی از ابهتتان را از دست دادید.`)
 }
